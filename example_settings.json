@@ -1,0 +1,4 @@
+{
+    "calendar_key":"Insert the calendar ID here",
+    "rapla_url":"https://rapla.dhbw-karlsruhe.de/rapla?page=calendar&user=<LASTNAME>&file=<courseAbbreviation>&day="
+}
