@@ -7,20 +7,9 @@ from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 import json
-import fs
+import settings_manager
 
 from rapla_fetch import RaplaFetch
-
-dir = os.path.dirname(os.path.realpath(__file__))
-print(dir)
-settingsReader = open(dir + "/settings.json")
-settings = json.load(settingsReader)
-settingsReader.close()
-print(settings)
-# If modifying these scopes, delete the file token.pickle.
-SCOPES = ['https://www.googleapis.com/auth/calendar']
-calendarId = settings['calendar_key']
-
 
 def main():
     today = datetime.date.today()
@@ -33,6 +22,19 @@ def main():
    
 
 def run(date):
+
+    dir = os.path.dirname(os.path.realpath(__file__))
+    print(dir)
+
+    settings_manager.createSettingsIfNotExisting(dir)
+    settings = settings_manager.loadSettings(dir)
+    
+    raplaURL = settings['rapla_url']
+    calendarId = settings['calendar_key']
+
+    # If modifying these scopes, delete the file token.pickle.
+    SCOPES = ['https://www.googleapis.com/auth/calendar']
+    
 
     todayAsWeekDay = date.weekday()
     startOfWeek = date.__sub__(datetime.timedelta(todayAsWeekDay))
@@ -68,7 +70,7 @@ def run(date):
     #print(calendars)
 
     #Fetch from Rapla
-    entries = RaplaFetch().fetch(startDateArr[0], startDateArr[1], startDateArr[2], settings['rapla_url'])
+    entries = RaplaFetch().fetch(startDateArr[0], startDateArr[1], startDateArr[2], raplaURL)
     googlifiedEntries = []
 
     #Googlify entries
