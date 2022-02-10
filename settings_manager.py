@@ -13,3 +13,9 @@ def loadSettings(dir):
     if settings is None:
         settings = json.load('{"unavailable":"an error occured while loading"}')
     return settings
+
+def safeRetrieve(settings, attribute):
+    try:
+        return settings[attribute]
+    except KeyError:
+        return None

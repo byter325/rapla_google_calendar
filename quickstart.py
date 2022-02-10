@@ -24,13 +24,12 @@ def main():
 def run(date):
 
     dir = os.path.dirname(os.path.realpath(__file__))
-    print(dir)
 
     settings_manager.createSettingsIfNotExisting(dir)
     settings = settings_manager.loadSettings(dir)
     
-    raplaURL = settings['rapla_url']
-    calendarId = settings['calendar_key']
+    raplaURL = settings_manager.safeRetrieve(settings, 'rapla_url')
+    calendarId = settings_manager.safeRetrieve(settings, 'calendar_key')
 
     # If modifying these scopes, delete the file token.pickle.
     SCOPES = ['https://www.googleapis.com/auth/calendar']
@@ -117,19 +116,19 @@ def convertDateTimeToGoogleFormat(date, time):
     day = dateArr[0]
     month = dateArr[1]
     year = dateArr[2]
-    return year + "-" + month + "-" + day + "T" + time + ":00.000"
+    return f"{str(year)}-{str(month)}-{str(day)}T{str(time)}:00.000"
 
 def convertDateTimeArrToGoogleFormat(dateArr, time):
     day = dateArr[0]
     month = dateArr[1]
     year = dateArr[2]
-    return str(year) + "-" + str(month) + "-" + str(day) + "T" + str(time) + ":00.000"
+    return f"{str(year)}-{str(month)}-{str(day)}T{str(time)}:00.000"
 
 def convertDateTimeToGoogleQueryFormat(dateArr, time):
     day = dateArr[0]
     month = dateArr[1]
     year = dateArr[2]
-    return str(year) + "-" + str(month) + "-" + str(day) + "T" + str(time) + ":00+01:00"
+    return f"{str(year)}-{str(month)}-{str(day)}T{str(time)}:00+01:00"
 
 if __name__ == '__main__':
     main()
