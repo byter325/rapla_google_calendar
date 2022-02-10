@@ -31,6 +31,7 @@ def run(date):
     
     raplaURL = settings_manager.safeRetrieve(settings, 'rapla_url')
     calendarId = settings_manager.safeRetrieve(settings, 'calendar_key')
+    ignoredCourses = settings_manager.readIgnoreCourses(dir)
 
     # If modifying these scopes, delete the file token.pickle.
     SCOPES = ['https://www.googleapis.com/auth/calendar']
@@ -43,7 +44,6 @@ def run(date):
     startDateArr = [startOfWeek.day, startOfWeek.month, startOfWeek.year]
     endDateArr = [endOfWeek.day, endOfWeek.month, endOfWeek.year]
 
-    creds = None
     service = authHandling(dir, SCOPES)
 
     #Fetch from Rapla
@@ -75,7 +75,7 @@ def readAndRemoveEntries(calendarId, service, startDateWithGoogleFormat, endDate
         service.events().delete(calendarId=calendarId, eventId = readEvent['id']).execute()
 
 def googlifyEntries(entries):
-    googlifiedEntries = None
+    googlifiedEntries = []
     for entry in entries:
         event = {
             'summary': entry.title,
@@ -94,6 +94,7 @@ def googlifyEntries(entries):
     return googlifiedEntries
 
 def authHandling(dir, SCOPES):
+    creds = None
     if os.path.exists(dir + '/token.pickle'):
         with open(dir + '/token.pickle', 'rb') as token:
             creds = pickle.load(token)
