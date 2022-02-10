@@ -51,7 +51,7 @@ class RaplaFetch():
         self.courseTitleMatcher = re.compile(self.courseTitlePattern)
         self.urlYearPattern = "year=\d\d\d\d"
         self.urlYearMatcher = re.compile(self.urlYearPattern)
-    def fetch(self, day, month, yearParam, urlBase):
+    def fetch(self, day, month, yearParam, urlBase, ignoredCourses):
         URL = urlBase + str(day) + "&month="+ str(month) +"&year=" + str(yearParam)
         print(URL)
         page = requests.get(URL)
@@ -66,12 +66,6 @@ class RaplaFetch():
             weekDatesStrings.append(string)
         year = str(self.urlYearMatcher.search(URL).group()).replace("year=","")
         entries = []
-        ignoredCourses = [
-            IgnoreCourse("Medizinisches Grundwissen I (MI)", 'Di', '16:30', '18:00'), 
-            IgnoreCourse("Medizinisches Grundwissen I (MI)", 'Mi', '16:30', '18:00'),
-            IgnoreCourse("Introduction to Networks (CCNA-1, Z)", 'Fr', '13:00', '15:30'),
-            IgnoreCourse("Intercultural Comm Gruppe 2", 'Do', '12:00', '13:30')
-            ]
 
         totalHours = 0
         for child in table:
@@ -165,3 +159,6 @@ class RaplaFetch():
 
         diff = totalEndTimeInSeconds - totalStartTimeInSeconds
         return diff / 60
+    def jsonCoursesToIgnoreCourses(jsonCourses):
+        for course in jsonCourses:
+            pass #Load each course as JSON and turn in IgnoreCourse object

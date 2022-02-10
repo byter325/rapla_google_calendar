@@ -20,6 +20,7 @@ print(settings)
 # If modifying these scopes, delete the file token.pickle.
 SCOPES = ['https://www.googleapis.com/auth/calendar']
 calendarId = settings['calendar_key']
+ignoredCourses = settings["ignoredCourses"]
 
 
 def main():
@@ -28,8 +29,9 @@ def main():
     #Run for the current week
     run(today)
 
-    #Run for the following week
+    #Run for the next 2 weeks
     run(today.__add__(datetime.timedelta(days=7)))
+    run(today.__add__(datetime.timedelta(days=14)))
    
 
 def run(date):
@@ -68,7 +70,7 @@ def run(date):
     #print(calendars)
 
     #Fetch from Rapla
-    entries = RaplaFetch().fetch(startDateArr[0], startDateArr[1], startDateArr[2], settings['rapla_url'])
+    entries = RaplaFetch().fetch(startDateArr[0], startDateArr[1], startDateArr[2], settings['rapla_url'], ignoredCourses)
     googlifiedEntries = []
 
     #Googlify entries
