@@ -35,19 +35,65 @@ def run(date):
     # If modifying these scopes, delete the file token.pickle.
     SCOPES = ['https://www.googleapis.com/auth/calendar']
     
-
+    #Date calculations
     todayAsWeekDay = date.weekday()
     startOfWeek = date.__sub__(datetime.timedelta(todayAsWeekDay))
     endOfWeek = date.__add__(datetime.timedelta(days=6 - todayAsWeekDay))
-
 
     startDateArr = [startOfWeek.day, startOfWeek.month, startOfWeek.year]
     endDateArr = [endOfWeek.day, endOfWeek.month, endOfWeek.year]
 
     creds = None
-    # The file token.pickle stores the user's access and refresh tokens, and is
-    # created automatically when the authorization flow completes for the first
-    # time.
+    service = authHandling(dir, SCOPES)
+
+    #Fetch from Rapla
+    entries = RaplaFetch().fetch(startDateArr[0], startDateArr[1], startDateArr[2], raplaURL)
+    googlifiedEntries = googlifyEntries(entries)  
+
+    startDateWithGoogleFormat = convertDateTimeToGoogleQueryFormat(startDateArr, "00:00")
+    endDateWithGoogleFormat = convertDateTimeToGoogleQueryFormat(endDateArr, "00:00")
+
+    #Call Calendar API
+    readAndRemoveEntries(calendarId, service, startDateWithGoogleFormat, endDateWithGoogleFormat)
+
+    insertEntries(calendarId, service, googlifiedEntries)
+
+def insertEntries(calendarId, service, googlifiedEntries):
+        for googleEvent in googlifiedEntries:
+            googleEvent = service.events().insert(calendarId=calendarId, body=googleEvent).execute()
+
+def readAndRemoveEntries(calendarId, service, startDateWithGoogleFormat, endDateWithGoogleFormat):
+    #Read entries for week from calendar
+    events_result = service.events().list(calendarId=calendarId, timeMin=startDateWithGoogleFormat, timeMax=endDateWithGoogleFormat,
+                                        timeZone="Europe/Berlin").execute()
+    readEvents = events_result.get('items', [])
+    #clear entries
+    for readEvent in readEvents:
+        print(readEvent)
+        if("(!)" in readEvent['summary']):
+            continue
+        service.events().delete(calendarId=calendarId, eventId = readEvent['id']).execute()
+
+def googlifyEntries(entries):
+    googlifiedEntries = None
+    for entry in entries:
+        event = {
+            'summary': entry.title,
+            'location': entry.location,
+            'start' : {
+                'dateTime':convertDateTimeToGoogleFormat(entry.date, entry.startTime),
+                'timeZone':'GMT+01:00'
+            },
+            'end': {
+                'dateTime':convertDateTimeToGoogleFormat(entry.date, entry.endTime),
+                'timeZone':'GMT+01:00'
+            }
+        }
+
+        googlifiedEntries.append(event)
+    return googlifiedEntries
+
+def authHandling(dir, SCOPES):
     if os.path.exists(dir + '/token.pickle'):
         with open(dir + '/token.pickle', 'rb') as token:
             creds = pickle.load(token)
@@ -64,52 +110,7 @@ def run(date):
             pickle.dump(creds, token)
 
     service = build('calendar', 'v3', credentials=creds)
-
-    # Call the Calendar API
-    #calendars = service.calendarList().list().execute()
-    #print(calendars)
-
-    #Fetch from Rapla
-    entries = RaplaFetch().fetch(startDateArr[0], startDateArr[1], startDateArr[2], raplaURL)
-    googlifiedEntries = []
-
-    #Googlify entries
-    for entry in entries:
-        event = {
-            'summary': entry.title,
-            'location': entry.location,
-            'start' : {
-                'dateTime':convertDateTimeToGoogleFormat(entry.date, entry.startTime),
-                'timeZone':'GMT+01:00'
-            },
-            'end': {
-                'dateTime':convertDateTimeToGoogleFormat(entry.date, entry.endTime),
-                'timeZone':'GMT+01:00'
-            }
-        }
-
-        googlifiedEntries.append(event)
-
-    startDateWithGoogleFormat = convertDateTimeToGoogleQueryFormat(startDateArr, "00:00")
-    endDateWithGoogleFormat = convertDateTimeToGoogleQueryFormat(endDateArr, "00:00")
-
-    print(startDateWithGoogleFormat, endDateWithGoogleFormat)
-
-    #Read entries for week from calendar
-    events_result = service.events().list(calendarId=calendarId, timeMin=startDateWithGoogleFormat, timeMax=endDateWithGoogleFormat,
-                                        timeZone="Europe/Berlin").execute()
-    readEvents = events_result.get('items', [])
-    #clear entries
-    for readEvent in readEvents:
-        print(readEvent)
-        if("(!)" in readEvent['summary']):
-            continue
-        service.events().delete(calendarId=calendarId, eventId = readEvent['id']).execute()
-
-    #insert the new entries
-    for googleEvent in googlifiedEntries:
-        #print(googleEvent)
-        googleEvent = service.events().insert(calendarId=calendarId, body=googleEvent).execute()
+    return service
 
 def convertDateTimeToGoogleFormat(date, time):
     dateArr = date.split('.')
