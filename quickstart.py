@@ -89,6 +89,8 @@ def googlifyEntries(entries):
                 'timeZone':'GMT+01:00'
             }
         }
+        if 'Klausur' in entry.title:
+            event['colorId'] = 11
 
         googlifiedEntries.append(event)
     return googlifiedEntries
