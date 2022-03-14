@@ -138,7 +138,7 @@ class RaplaFetch():
         return False
     def shouldCourseBeIgnoredByName(self, courseObj, ignoredCourses):
         for ignoredCourse in ignoredCourses:
-            if courseObj.title == ignoredCourse.title:
+            if ignoredCourse.title in courseObj.title:
                 return True
         return False
 

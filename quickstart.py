@@ -52,7 +52,7 @@ def run(date):
 
     startDateWithGoogleFormat = convertDateTimeToGoogleQueryFormat(startDateArr, "00:00")
     endDateWithGoogleFormat = convertDateTimeToGoogleQueryFormat(endDateArr, "00:00")
-
+    
     #Call Calendar API
     readAndRemoveEntries(calendarId, service, startDateWithGoogleFormat, endDateWithGoogleFormat)
 
@@ -91,6 +91,12 @@ def googlifyEntries(entries):
         }
         if 'Klausur' in entry.title:
             event['colorId'] = 11
+        dateArr = entry.date.split('.')
+        dayMonthCombo = int(dateArr[1] + "" + dateArr[0])
+        if dayMonthCombo >= 327 and dayMonthCombo <= 1030:
+            event['start']['timeZone'] = 'GMT+02:00'
+            event['end']['timeZone'] = 'GMT+02:00'
+        
 
         googlifiedEntries.append(event)
     return googlifiedEntries
