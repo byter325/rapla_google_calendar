@@ -3,6 +3,7 @@ import datetime
 from importlib.resources import path
 import pickle
 import os
+from time import sleep
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
@@ -14,12 +15,17 @@ from rapla_fetch import RaplaFetch
 def main():
     today = datetime.date.today()
     
-    #Run for the current week
-    run(today)
+    runningDate = today
+    firstMondayInSemester = datetime.date(2022, 5, 9)
+    if runningDate < firstMondayInSemester:
+        runningDate = firstMondayInSemester
+    lastMondayInSemester = datetime.date(2022, 8, 1)
 
-    #Run for the next 2 weeks
-    run(today.__add__(datetime.timedelta(days=7)))
-    run(today.__add__(datetime.timedelta(days=14)))
+    i = 0
+    while runningDate.__add__(datetime.timedelta(days=7*i)) <= lastMondayInSemester:
+        run(runningDate.__add__(datetime.timedelta(days=7*i)))
+        i += 1
+        sleep(5)
    
 
 def run(date):
