@@ -1,4 +1,5 @@
 from cgitb import text
+import os
 from fs.opener import parse
 import requests
 from bs4 import BeautifulSoup
@@ -54,6 +55,9 @@ class RaplaFetch():
     def fetch(self, day, month, yearParam, urlBase, ignoredCourses):
         URL = urlBase + str(day) + "&month="+ str(month) +"&year=" + str(yearParam)
         print(URL)
+        dir = os.path.dirname(os.path.realpath(__file__))
+        holidays = self.getHolidays(dir, 2022)
+
         page = requests.get(URL)
         soup = BeautifulSoup(page.content, "html.parser")
         weekDates = soup.find_all(class_="week_header")
@@ -83,7 +87,7 @@ class RaplaFetch():
                             if len(date) > 14:
                                 date = self.cleanDate(date)
                             entry = CalendarEntry().build(title, self.weekDayToDate(date, weekDatesStrings, year), location)
-                            if not self.shouldCourseBeIgnoredByName(entry, ignoredCourses):
+                            if not self.shouldCourseBeIgnoredByName(entry, ignoredCourses) and not self.isCourseAHoliday(entry, holidays):
                                 totalHours += self.getCourseLength(entry)
                                 print(entry.__dict__)
                                 entries.append(entry)
@@ -142,6 +146,12 @@ class RaplaFetch():
                 return True
         return False
 
+    def isCourseAHoliday(self, course, holidays):
+        for holiday in holidays:
+            if course.title in holiday or holiday in course.title:
+                return True
+        return False
+
     def weekDayDateToFileString(self, weekDayDate, year):
         return weekDayDate.split(' ')[1].replace('.','_') + year
 
@@ -162,3 +172,14 @@ class RaplaFetch():
     def jsonCoursesToIgnoreCourses(jsonCourses):
         for course in jsonCourses:
             pass #Load each course as JSON and turn in IgnoreCourse object
+    
+    def getHolidays(self, dir, year):
+        path = dir + '/holidays_' + str(year) + ".json"
+        if os.path.exists(path):
+            with open(path, 'r') as file:
+                holidays = json.load(file)
+                return holidays.keys()
+        else:
+            page = requests.get('https://feiertage-api.de/api/?jahr='+str(year)+'&nur_land=BW')
+            with open(path, 'w') as holidays:
+                holidays.write(page.text)

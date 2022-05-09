@@ -14,7 +14,7 @@ from rapla_fetch import RaplaFetch
 
 def main():
     today = datetime.date.today()
-    
+
     runningDate = today
     firstMondayInSemester = datetime.date(2022, 5, 9)
     if runningDate < firstMondayInSemester:
