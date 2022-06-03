@@ -25,7 +25,7 @@ def main():
     while runningDate.__add__(datetime.timedelta(days=7*i)) <= lastMondayInSemester:
         run(runningDate.__add__(datetime.timedelta(days=7*i)))
         i += 1
-        sleep(5)
+        sleep(10)
    
 
 def run(date):
@@ -71,11 +71,11 @@ def insertEntries(calendarId, service, googlifiedEntries):
 def readAndRemoveEntries(calendarId, service, startDateWithGoogleFormat, endDateWithGoogleFormat):
     #Read entries for week from calendar
     events_result = service.events().list(calendarId=calendarId, timeMin=startDateWithGoogleFormat, timeMax=endDateWithGoogleFormat,
-                                        timeZone="Europe/Berlin").execute()
+                                        timeZone="Europe/Berlin", maxResults=9999).execute()
     readEvents = events_result.get('items', [])
     #clear entries
     for readEvent in readEvents:
-        print(readEvent)
+        print("read: ", readEvent)
         if("(!)" in readEvent['summary']):
             continue
         service.events().delete(calendarId=calendarId, eventId = readEvent['id']).execute()
