@@ -16,10 +16,10 @@ def main():
     today = datetime.date.today()
 
     runningDate = today
-    firstMondayInSemester = datetime.date(2022, 5, 9)
+    firstMondayInSemester = datetime.date(2022, 10, 3)
     if runningDate < firstMondayInSemester:
         runningDate = firstMondayInSemester
-    lastMondayInSemester = datetime.date(2022, 8, 1)
+    lastMondayInSemester = datetime.date(2022, 12, 19)
 
     i = 0
     while runningDate.__add__(datetime.timedelta(days=7*i)) <= lastMondayInSemester:
@@ -95,7 +95,7 @@ def googlifyEntries(entries):
                 'timeZone':'GMT+01:00'
             }
         }
-        if 'Klausur' in entry.title:
+        if 'Klausur' in entry.title or 'Prüfung' in entry.title:
             event['colorId'] = 11
         dateArr = entry.date.split('.')
         dayMonthCombo = int(dateArr[1] + "" + dateArr[0])
