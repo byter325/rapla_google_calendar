@@ -34,6 +34,7 @@ jobs:
             pip install fs
             pip install google-api-python-client 
             pip install google-auth-oauthlib
+            pip install beautifulsoup4
       # Runs a single command using the runners shell
       - name: Run a one-line script
         run: python quickstart.py
