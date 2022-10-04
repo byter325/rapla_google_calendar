@@ -31,6 +31,7 @@ jobs:
           python-version: '3.10'
       - name: Run pip
         run: | 
+            pip install fs
             pip install google-api-python-client 
             pip install google-auth-oauthlib
       # Runs a single command using the runners shell
