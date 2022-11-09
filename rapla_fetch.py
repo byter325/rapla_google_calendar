@@ -83,7 +83,7 @@ class RaplaFetch():
                             date = self.findDateAsStringFromATag(textArr)[0]
                             title = self.findCourseTitleFromATag(textArr).strip()
                             resources = blockChild.findAll(class_="resource")
-                            location = resources[len(resources) - 1].text
+                            location = self.findLocation(resources)
                             if len(date) > 14:
                                 date = self.cleanDate(date)
                             entry = CalendarEntry().build(title, self.weekDayToDate(date, weekDatesStrings, year), location)
@@ -98,6 +98,13 @@ class RaplaFetch():
         print(totalHours/60)
 
         return entries
+
+    def findLocation(self, resources):
+        if len(resources) > 0:
+            for entry in resources:
+                if "Hörsaal" in entry.text:
+                    return entry.text
+        return None
 
     def findDateAsStringFromATag(self, contents):
         standardPatternResults = re.findall(self.dayTimePattern, contents)
