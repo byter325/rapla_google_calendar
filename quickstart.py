@@ -12,6 +12,7 @@ import settings_manager
 
 from rapla_fetch import RaplaFetch
 
+
 def main():
     today = datetime.date.today()
 
@@ -26,23 +27,26 @@ def main():
         run(runningDate.__add__(datetime.timedelta(days=7*i)))
         i += 1
         sleep(10)
-   
+
 
 def run(date):
-
+    runLocally = os.environ.get("RUN_LOCALLY")
     dir = os.path.dirname(os.path.realpath(__file__))
 
     settings_manager.createSettingsIfNotExisting(dir)
     settings = settings_manager.loadSettings(dir)
-    
+
     raplaURL = settings_manager.safeRetrieve(settings, 'rapla_url')
     calendarId = settings_manager.safeRetrieve(settings, 'calendar_key')
-    ignoredCourses = settings_manager.readIgnoreCourses(dir)
+    if runLocally == None:
+        ignoredCourses = settings_manager.readIgnoreCourses(dir)
+    else:
+        ignoredCourses = settings_manager.readIgnoredCoursesFromEnv()
 
     # If modifying these scopes, delete the file token.pickle.
     SCOPES = ['https://www.googleapis.com/auth/calendar']
-    
-    #Date calculations
+
+    # Date calculations
     todayAsWeekDay = date.weekday()
     startOfWeek = date.__sub__(datetime.timedelta(todayAsWeekDay))
     endOfWeek = date.__add__(datetime.timedelta(days=6 - todayAsWeekDay))
@@ -50,35 +54,47 @@ def run(date):
     startDateArr = [startOfWeek.day, startOfWeek.month, startOfWeek.year]
     endDateArr = [endOfWeek.day, endOfWeek.month, endOfWeek.year]
 
-    service = authHandling(dir, SCOPES)
+    if runLocally != None:
+        service = authHandling(dir, SCOPES)
+    else:
+        service = authHandlingFromEnv()
 
-    #Fetch from Rapla
-    entries = RaplaFetch().fetch(startDateArr[0], startDateArr[1], startDateArr[2], raplaURL, ignoredCourses)
-    googlifiedEntries = googlifyEntries(entries)  
+    # Fetch from Rapla
+    entries = RaplaFetch().fetch(
+        startDateArr[0], startDateArr[1], startDateArr[2], raplaURL, ignoredCourses)
+    googlifiedEntries = googlifyEntries(entries)
 
-    startDateWithGoogleFormat = convertDateTimeToGoogleQueryFormat(startDateArr, "00:00")
-    endDateWithGoogleFormat = convertDateTimeToGoogleQueryFormat(endDateArr, "00:00")
-    
-    #Call Calendar API
-    readAndRemoveEntries(calendarId, service, startDateWithGoogleFormat, endDateWithGoogleFormat)
+    startDateWithGoogleFormat = convertDateTimeToGoogleQueryFormat(
+        startDateArr, "00:00")
+    endDateWithGoogleFormat = convertDateTimeToGoogleQueryFormat(
+        endDateArr, "00:00")
+
+    # Call Calendar API
+    readAndRemoveEntries(calendarId, service,
+                         startDateWithGoogleFormat, endDateWithGoogleFormat)
 
     insertEntries(calendarId, service, googlifiedEntries)
 
+
 def insertEntries(calendarId, service, googlifiedEntries):
-        for googleEvent in googlifiedEntries:
-            googleEvent = service.events().insert(calendarId=calendarId, body=googleEvent).execute()
+    for googleEvent in googlifiedEntries:
+        googleEvent = service.events().insert(
+            calendarId=calendarId, body=googleEvent).execute()
+
 
 def readAndRemoveEntries(calendarId, service, startDateWithGoogleFormat, endDateWithGoogleFormat):
-    #Read entries for week from calendar
+    # Read entries for week from calendar
     events_result = service.events().list(calendarId=calendarId, timeMin=startDateWithGoogleFormat, timeMax=endDateWithGoogleFormat,
-                                        timeZone="Europe/Berlin", maxResults=9999).execute()
+                                          timeZone="Europe/Berlin", maxResults=9999).execute()
     readEvents = events_result.get('items', [])
-    #clear entries
+    # clear entries
     for readEvent in readEvents:
         print("read: ", readEvent)
-        if("(!)" in readEvent['summary']):
+        if ("(!)" in readEvent['summary']):
             continue
-        service.events().delete(calendarId=calendarId, eventId = readEvent['id']).execute()
+        service.events().delete(calendarId=calendarId,
+                                eventId=readEvent['id']).execute()
+
 
 def googlifyEntries(entries):
     googlifiedEntries = []
@@ -86,13 +102,13 @@ def googlifyEntries(entries):
         event = {
             'summary': entry.title,
             'location': entry.location,
-            'start' : {
-                'dateTime':convertDateTimeToGoogleFormat(entry.date, entry.startTime),
-                'timeZone':'GMT+01:00'
+            'start': {
+                'dateTime': convertDateTimeToGoogleFormat(entry.date, entry.startTime),
+                'timeZone': 'GMT+01:00'
             },
             'end': {
-                'dateTime':convertDateTimeToGoogleFormat(entry.date, entry.endTime),
-                'timeZone':'GMT+01:00'
+                'dateTime': convertDateTimeToGoogleFormat(entry.date, entry.endTime),
+                'timeZone': 'GMT+01:00'
             }
         }
         if 'Klausur' in entry.title or 'Prüfung' in entry.title:
@@ -102,10 +118,22 @@ def googlifyEntries(entries):
         if dayMonthCombo >= 327 and dayMonthCombo <= 1030:
             event['start']['timeZone'] = 'GMT+02:00'
             event['end']['timeZone'] = 'GMT+02:00'
-        
 
         googlifiedEntries.append(event)
     return googlifiedEntries
+
+
+def authHandlingFromEnv():
+    token = os.environ.get("GOOGLE_API_TOKEN")
+    if token == None:
+        raise ("Token not found")
+    try:
+        creds = pickle.load(token)
+        service = build('calendar', 'v3', credentials=creds)
+        return service
+    except:
+        raise ("An error occured during authentification")
+
 
 def authHandling(dir, SCOPES):
     creds = None
@@ -127,6 +155,7 @@ def authHandling(dir, SCOPES):
     service = build('calendar', 'v3', credentials=creds)
     return service
 
+
 def convertDateTimeToGoogleFormat(date, time):
     dateArr = date.split('.')
     day = dateArr[0]
@@ -134,17 +163,20 @@ def convertDateTimeToGoogleFormat(date, time):
     year = dateArr[2]
     return f"{str(year)}-{str(month)}-{str(day)}T{str(time)}:00.000"
 
+
 def convertDateTimeArrToGoogleFormat(dateArr, time):
     day = dateArr[0]
     month = dateArr[1]
     year = dateArr[2]
     return f"{str(year)}-{str(month)}-{str(day)}T{str(time)}:00.000"
 
+
 def convertDateTimeToGoogleQueryFormat(dateArr, time):
     day = dateArr[0]
     month = dateArr[1]
     year = dateArr[2]
     return f"{str(year)}-{str(month)}-{str(day)}T{str(time)}:00+01:00"
+
 
 if __name__ == '__main__':
     main()

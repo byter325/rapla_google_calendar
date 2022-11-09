@@ -7,6 +7,7 @@ import re
 import json
 import datetime
 
+
 class CalendarEntry:
     title = None
     date = None
@@ -14,8 +15,10 @@ class CalendarEntry:
     endTime = None
     weekDay = None
     location = "None"
+
     def __init__(self) -> None:
         pass
+
     def build(self, title, dateTime, location):
         self.title = title
         dateTimeArr = dateTime.split(';')
@@ -30,11 +33,12 @@ class CalendarEntry:
         self.startTime = startTime
         self.endTime = endTime
         self.location = location
-        if(location == None):
+        if (location == None):
             self.location = "None"
-        if(location == "XOnline-Veranstaltung  Virtueller Raum"):
+        if (location == "XOnline-Veranstaltung  Virtueller Raum"):
             self.location = "Online"
         return self
+
 
 class IgnoreCourse():
     def __init__(self, title, weekDay, startTime, endTime) -> None:
@@ -42,6 +46,7 @@ class IgnoreCourse():
         self.weekDay = weekDay
         self.startTime = startTime
         self.endTime = endTime
+
 
 class RaplaFetch():
     def __init__(self) -> None:
@@ -52,8 +57,10 @@ class RaplaFetch():
         self.courseTitleMatcher = re.compile(self.courseTitlePattern)
         self.urlYearPattern = "year=\d\d\d\d"
         self.urlYearMatcher = re.compile(self.urlYearPattern)
+
     def fetch(self, day, month, yearParam, urlBase, ignoredCourses):
-        URL = urlBase + str(day) + "&month="+ str(month) +"&year=" + str(yearParam)
+        URL = urlBase + str(day) + "&month=" + str(month) + \
+            "&year=" + str(yearParam)
         print(URL)
         dir = os.path.dirname(os.path.realpath(__file__))
         holidays = self.getHolidays(dir, 2022)
@@ -68,7 +75,8 @@ class RaplaFetch():
         for date in weekDates:
             string = date.text
             weekDatesStrings.append(string)
-        year = str(self.urlYearMatcher.search(URL).group()).replace("year=","")
+        year = str(self.urlYearMatcher.search(
+            URL).group()).replace("year=", "")
         entries = []
 
         totalHours = 0
@@ -81,12 +89,14 @@ class RaplaFetch():
                         textArr = aTag.text.replace('\n', " ")
                         try:
                             date = self.findDateAsStringFromATag(textArr)[0]
-                            title = self.findCourseTitleFromATag(textArr).strip()
+                            title = self.findCourseTitleFromATag(
+                                textArr).strip()
                             resources = blockChild.findAll(class_="resource")
                             location = resources[len(resources) - 1].text
                             if len(date) > 14:
                                 date = self.cleanDate(date)
-                            entry = CalendarEntry().build(title, self.weekDayToDate(date, weekDatesStrings, year), location)
+                            entry = CalendarEntry().build(title, self.weekDayToDate(
+                                date, weekDatesStrings, year), location)
                             if not self.shouldCourseBeIgnoredByName(entry, ignoredCourses) and not self.isCourseAHoliday(entry, holidays):
                                 totalHours += self.getCourseLength(entry)
                                 print(entry.__dict__)
@@ -102,7 +112,8 @@ class RaplaFetch():
     def findDateAsStringFromATag(self, contents):
         standardPatternResults = re.findall(self.dayTimePattern, contents)
         if len(standardPatternResults) == 0:
-            standardPatternResults = re.findall(self.dayTimeAndDatePattern, contents)
+            standardPatternResults = re.findall(
+                self.dayTimeAndDatePattern, contents)
         return standardPatternResults
 
     def findCourseTitleFromATag(self, contents):
@@ -140,6 +151,7 @@ class RaplaFetch():
             if courseObj.title == ignoredCourse.title and courseObj.weekDay == ignoredCourse.weekDay and courseObj.startTime == ignoredCourse.startTime and courseObj.endTime == ignoredCourse.endTime:
                 return True
         return False
+
     def shouldCourseBeIgnoredByName(self, courseObj, ignoredCourses):
         for ignoredCourse in ignoredCourses:
             if ignoredCourse.title in courseObj.title:
@@ -153,7 +165,7 @@ class RaplaFetch():
         return False
 
     def weekDayDateToFileString(self, weekDayDate, year):
-        return weekDayDate.split(' ')[1].replace('.','_') + year
+        return weekDayDate.split(' ')[1].replace('.', '_') + year
 
     def getCourseLength(self, course):
         startTime = course.startTime.split(':')
@@ -162,17 +174,18 @@ class RaplaFetch():
         startHour = int(startTime[0])
         startMinutes = int(startTime[1])
         totalStartTimeInSeconds = startHour * 60 * 60 + startMinutes * 60
-        
+
         endHour = int(endTime[0])
         endMinutes = int(endTime[1])
         totalEndTimeInSeconds = endHour * 60 * 60 + endMinutes * 60
 
         diff = totalEndTimeInSeconds - totalStartTimeInSeconds
         return diff / 60
+
     def jsonCoursesToIgnoreCourses(jsonCourses):
         for course in jsonCourses:
-            pass #Load each course as JSON and turn in IgnoreCourse object
-    
+            pass  # Load each course as JSON and turn in IgnoreCourse object
+
     def getHolidays(self, dir, year):
         path = dir + '/holidays_' + str(year) + ".json"
         if os.path.exists(path):
@@ -180,6 +193,7 @@ class RaplaFetch():
                 holidays = json.load(file)
                 return holidays.keys()
         else:
-            page = requests.get('https://feiertage-api.de/api/?jahr='+str(year)+'&nur_land=BW')
+            page = requests.get(
+                'https://feiertage-api.de/api/?jahr='+str(year)+'&nur_land=BW')
             with open(path, 'w') as holidays:
                 holidays.write(page.text)
